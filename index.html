@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+  />
+  <title>Paws & Partners</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+    rel="stylesheet"
+  />
+
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div id="appShell">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand__icon">🐶</div>
+        <div>
+          <h1>Paws & Partners</h1>
+          <p>Dog-first dating prototype</p>
+        </div>
+      </div>
+
+      <nav class="topbar__actions">
+        <button id="navHomeBtn" class="ghost-btn" type="button">Home</button>
+        <button id="navBrowseBtn" class="ghost-btn hidden" type="button">Browse</button>
+        <button id="navProfileBtn" class="ghost-btn hidden" type="button">Profile</button>
+        <button id="navMatchesBtn" class="ghost-btn hidden" type="button">Matches</button>
+        <button id="logoutBtn" class="primary-btn hidden" type="button">Log out</button>
+      </nav>
+    </header>
+
+    <main id="screenLanding" class="screen active">
+      <section class="hero card">
+        <div class="hero__text">
+          <span class="pill">Prototype build</span>
+          <h2>Meet people through dog dates, not dead-end chats.</h2>
+          <p>
+            This prototype tests a three-step flow:
+            person match, activity match, then date match.
+          </p>
+
+          <div class="hero__actions">
+            <button id="showSignupBtn" class="primary-btn" type="button">Create account</button>
+            <button id="showLoginBtn" class="secondary-btn" type="button">Log in</button>
+          </div>
+
+          <div class="demo-note">
+            <strong>Important:</strong>
+            This version is a working front-end prototype.
+            It runs in local demo mode unless you paste in your Firebase config.
+          </div>
+        </div>
+
+        <div class="hero__panel">
+          <div class="mini-card">
+            <h3>1</h3>
+            <p>Do you like the person?</p>
+          </div>
+          <div class="mini-card">
+            <h3>2</h3>
+            <p>Would your dogs enjoy the same activity?</p>
+          </div>
+          <div class="mini-card">
+            <h3>3</h3>
+            <p>Can you agree a date?</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="auth-grid">
+        <div id="signupCard" class="card auth-card hidden">
+          <h3>Create account</h3>
+          <form id="signupForm" class="form-stack">
+            <label>
+              <span>Full name</span>
+              <input id="signupName" type="text" placeholder="Chip Butt" required />
+            </label>
+
+            <label>
+              <span>Email</span>
+              <input id="signupEmail" type="email" placeholder="you@example.com" required />
+            </label>
+
+            <label>
+              <span>Password</span>
+              <input id="signupPassword" type="password" placeholder="Minimum 6 characters" required />
+            </label>
+
+            <button class="primary-btn" type="submit">Create account</button>
+          </form>
+        </div>
+
+        <div id="loginCard" class="card auth-card hidden">
+          <h3>Log in</h3>
+          <form id="loginForm" class="form-stack">
+            <label>
+              <span>Email</span>
+              <input id="loginEmail" type="email" placeholder="you@example.com" required />
+            </label>
+
+            <label>
+              <span>Password</span>
+              <input id="loginPassword" type="password" placeholder="Your password" required />
+            </label>
+
+            <button class="primary-btn" type="submit">Log in</button>
+          </form>
+        </div>
+      </section>
+    </main>
+
+    <main id="screenProfile" class="screen">
+      <section class="screen-header">
+        <div>
+          <h2>Your profile</h2>
+          <p>Set up the owner and dog profile used for matching.</p>
+        </div>
+      </section>
+
+      <section class="profile-layout">
+        <form id="profileForm" class="card form-card">
+          <h3>About you</h3>
+
+          <div class="form-grid">
+            <label>
+              <span>Display name</span>
+              <input id="profileName" type="text" placeholder="Chip" />
+            </label>
+
+            <label>
+              <span>Age</span>
+              <input id="profileAge" type="number" min="18" max="99" placeholder="34" />
+            </label>
+
+            <label>
+              <span>Town or area</span>
+              <input id="profileLocation" type="text" placeholder="Bidford-on-Avon" />
+            </label>
+
+            <label>
+              <span>County</span>
+              <input id="profileCounty" type="text" placeholder="Warwickshire" />
+            </label>
+
+            <label>
+              <span>Distance preference</span>
+              <select id="profileDistance">
+                <option value="5">Up to 5 miles</option>
+                <option value="10" selected>Up to 10 miles</option>
+                <option value="20">Up to 20 miles</option>
+                <option value="30">Up to 30 miles</option>
+              </select>
+            </label>
+
+            <label>
+              <span>Privacy mode</span>
+              <select id="profilePrivacy">
+                <option value="distance" selected>Show distance only</option>
+                <option value="county">County-level only</option>
+                <option value="town">Town-level</option>
+              </select>
+            </label>
+
+            <label class="full-width">
+              <span>Bio</span>
+              <textarea
+                id="profileBio"
+                rows="4"
+                placeholder="Tell people about yourself and the kind of dog date you’d enjoy."
+              ></textarea>
+            </label>
+          </div>
+
+          <h3>Your dog</h3>
+
+          <div class="form-grid">
+            <label>
+              <span>Dog name</span>
+              <input id="dogName" type="text" placeholder="Watson" />
+            </label>
+
+            <label>
+              <span>Breed</span>
+              <input id="dogBreed" type="text" placeholder="Beagle" />
+            </label>
+
+            <label>
+              <span>Dog age</span>
+              <input id="dogAge" type="number" min="0" max="30" placeholder="4" />
+            </label>
+
+            <label>
+              <span>Dog size</span>
+              <select id="dogSize">
+                <option value="">Select size</option>
+                <option value="small">Small</option>
+                <option value="medium">Medium</option>
+                <option value="large">Large</option>
+              </select>
+            </label>
+
+            <label class="full-width">
+              <span>Dog temperament</span>
+              <input
+                id="dogTemperament"
+                type="text"
+                placeholder="Friendly, playful, nervous with larger dogs, loves secure fields"
+              />
+            </label>
+
+            <label class="full-width">
+              <span>Preferred dog date activities</span>
+              <div class="checkbox-grid">
+                <label><input type="checkbox" name="activities" value="secure_field" /> Secure fields</label>
+                <label><input type="checkbox" name="activities" value="woodland_walk" /> Woodland walks</label>
+                <label><input type="checkbox" name="activities" value="dog_cafe" /> Dog-friendly cafés</label>
+                <label><input type="checkbox" name="activities" value="dog_park" /> Dog parks</label>
+                <label><input type="checkbox" name="activities" value="beach_walk" /> Beach walks</label>
+                <label><input type="checkbox" name="activities" value="training_play" /> Training and play</label>
+              </div>
+            </label>
+
+            <label class="full-width">
+              <span>Profile photo</span>
+              <input id="profilePhoto" type="file" accept="image/*" />
+            </label>
+
+            <label class="full-width">
+              <span>Dog verification photo</span>
+              <input id="dogVerificationPhoto" type="file" accept="image/*" />
+              <small class="help-text">
+                Prototype suggestion: upload a photo of you with your dog.
+              </small>
+            </label>
+          </div>
+
+          <div class="form-actions">
+            <button class="primary-btn" type="submit">Save profile</button>
+          </div>
+        </form>
+
+        <aside class="card preview-card">
+          <h3>Live preview</h3>
+
+          <div class="profile-preview">
+            <div class="avatar-circle" id="previewAvatar">🐾</div>
+            <h4 id="previewName">Your name</h4>
+            <p id="previewMeta">Age • Area</p>
+            <p id="previewBio">Your bio will appear here.</p>
+
+            <div class="dog-panel">
+              <h5 id="previewDogName">Dog name</h5>
+              <p id="previewDogMeta">Breed • Size • Temperament</p>
+            </div>
+          </div>
+        </aside>
+      </section>
+    </main>
+
+    <main id="screenBrowse" class="screen">
+      <section class="screen-header">
+        <div>
+          <h2>Discover</h2>
+          <p>Stage 1: decide if you like the person.</p>
+        </div>
+      </section>
+
+      <section class="browse-layout">
+        <div class="card swipe-card">
+          <div id="swipeCardContainer" class="swipe-card__content">
+            <div id="candidateAvatar" class="swipe-photo">🐶</div>
+
+            <div class="swipe-body">
+              <div class="swipe-topline">
+                <h3 id="candidateName">Loading...</h3>
+                <span id="candidateDistance" class="pill">0 miles away</span>
+              </div>
+
+              <p id="candidateMeta">Age • Area</p>
+              <p id="candidateBio">Candidate bio will appear here.</p>
+
+              <div class="dog-chip-list">
+                <span class="dog-chip" id="candidateDogName">Dog</span>
+                <span class="dog-chip" id="candidateDogBreed">Breed</span>
+                <span class="dog-chip" id="candidateDogTemperament">Temperament</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="swipe-actions">
+            <button id="passBtn" class="danger-btn" type="button">Pass</button>
+            <button id="likeBtn" class="success-btn" type="button">Like</button>
+          </div>
+        </div>
+
+        <aside class="card progress-card">
+          <h3>Flow</h3>
+          <ol class="progress-list">
+            <li>Like the person</li>
+            <li>Compare dog-date activities</li>
+            <li>Compare available dates</li>
+            <li>Then show the suggested first date</li>
+          </ol>
+        </aside>
+      </section>
+    </main>
+
+    <main id="screenActivities" class="screen">
+      <section class="screen-header">
+        <div>
+          <h2>Activity match</h2>
+          <p>Stage 2: choose what kind of dog date you and your dog would enjoy.</p>
+        </div>
+      </section>
+
+      <section class="activity-layout">
+        <div class="card">
+          <h3>Suggested activities</h3>
+          <p class="muted">
+            In the full app these would come from local venue data.
+          </p>
+
+          <div id="activityOptions" class="activity-list"></div>
+
+          <div class="form-actions">
+            <button id="saveActivityChoicesBtn" class="primary-btn" type="button">
+              Save activity choices
+            </button>
+          </div>
+        </div>
+
+        <aside class="card">
+          <h3>Current match context</h3>
+          <div id="activityMatchSummary" class="summary-box">
+            Waiting for match data...
+          </div>
+        </aside>
+      </section>
+    </main>
+
+    <main id="screenDates" class="screen">
+      <section class="screen-header">
+        <div>
+          <h2>Pick a date</h2>
+          <p>Stage 3: find a date that works for both of you.</p>
+        </div>
+      </section>
+
+      <section class="date-layout">
+        <div class="card">
+          <h3>Available dates</h3>
+          <p class="muted">
+            In the full app these would come from a booking system or venue calendar.
+          </p>
+
+          <div id="dateOptions" class="date-list"></div>
+
+          <div class="form-actions">
+            <button id="saveDateChoicesBtn" class="primary-btn" type="button">
+              Save date choices
+            </button>
+          </div>
+        </div>
+
+        <aside class="card">
+          <h3>Plan summary</h3>
+          <div id="dateSummary" class="summary-box">
+            No date selected yet.
+          </div>
+        </aside>
+      </section>
+    </main>
+
+    <main id="screenMatches" class="screen">
+      <section class="screen-header">
+        <div>
+          <h2>Your matches</h2>
+          <p>Review your current dog-date matches and their status.</p>
+        </div>
+      </section>
+
+      <section class="card">
+        <div id="matchesList" class="matches-list">
+          <div class="empty-state">
+            <h3>No matches yet</h3>
+            <p>When you start liking profiles, your matches will show here.</p>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="toast" class="toast hidden"></div>
+
+  <div id="modalOverlay" class="modal-overlay hidden">
+    <div class="modal card">
+      <button id="closeModalBtn" class="modal__close" type="button" aria-label="Close modal">×</button>
+      <div id="modalContent">
+        <h3>Modal title</h3>
+        <p>Modal body</p>
+      </div>
+    </div>
+  </div>
+
+  <template id="activityOptionTemplate">
+    <label class="activity-item">
+      <input type="checkbox" class="activity-checkbox" />
+      <div class="activity-item__body">
+        <strong class="activity-title">Activity title</strong>
+        <p class="activity-description">Description goes here.</p>
+        <span class="activity-distance">Distance info</span>
+      </div>
+    </label>
+  </template>
+
+  <template id="dateOptionTemplate">
+    <label class="date-item">
+      <input type="checkbox" class="date-checkbox" />
+      <div class="date-item__body">
+        <strong class="date-title">Date option</strong>
+        <p class="date-description">Venue or availability details</p>
+      </div>
+    </label>
+  </template>
+
+  <template id="matchCardTemplate">
+    <article class="match-card">
+      <div class="match-card__avatar">🐕</div>
+      <div class="match-card__body">
+        <h3 class="match-name">Name</h3>
+        <p class="match-meta">Dog • Area</p>
+        <p class="match-status">Status</p>
+      </div>
+      <div class="match-card__actions">
+        <button class="secondary-btn match-open-btn" type="button">Open</button>
+      </div>
+    </article>
+  </template>
+
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+
+  <script src="data.js"></script>
+  <script src="firebase-config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
