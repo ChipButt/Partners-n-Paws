@@ -23,6 +23,7 @@
   };
 
   const state = {
+    booted: false,
     user: null,
     profile: null,
     currentCandidateIndex: 0,
@@ -33,98 +34,93 @@
 
   const $ = (id) => document.getElementById(id);
 
-  const dom = {
-    modeBadge: $("modeBadge"),
+  function getDom() {
+    return {
+      modeBadge: $("modeBadge"),
 
-    screenLanding: $("screenLanding"),
-    screenProfile: $("screenProfile"),
-    screenBrowse: $("screenBrowse"),
-    screenActivities: $("screenActivities"),
-    screenDates: $("screenDates"),
-    screenMatches: $("screenMatches"),
+      screenLanding: $("screenLanding"),
+      screenProfile: $("screenProfile"),
+      screenBrowse: $("screenBrowse"),
+      screenActivities: $("screenActivities"),
+      screenDates: $("screenDates"),
+      screenMatches: $("screenMatches"),
 
-    navHomeBtn: $("navHomeBtn"),
-    navBrowseBtn: $("navBrowseBtn"),
-    navProfileBtn: $("navProfileBtn"),
-    navMatchesBtn: $("navMatchesBtn"),
-    logoutBtn: $("logoutBtn"),
+      navHomeBtn: $("navHomeBtn"),
+      navBrowseBtn: $("navBrowseBtn"),
+      navProfileBtn: $("navProfileBtn"),
+      navMatchesBtn: $("navMatchesBtn"),
+      logoutBtn: $("logoutBtn"),
 
-    showSignupBtn: $("showSignupBtn"),
-    showLoginBtn: $("showLoginBtn"),
-    signupCard: $("signupCard"),
-    loginCard: $("loginCard"),
-    signupForm: $("signupForm"),
-    loginForm: $("loginForm"),
+      showSignupBtn: $("showSignupBtn"),
+      showLoginBtn: $("showLoginBtn"),
+      signupCard: $("signupCard"),
+      loginCard: $("loginCard"),
+      signupForm: $("signupForm"),
+      loginForm: $("loginForm"),
 
-    signupName: $("signupName"),
-    signupEmail: $("signupEmail"),
-    signupPassword: $("signupPassword"),
-    loginEmail: $("loginEmail"),
-    loginPassword: $("loginPassword"),
+      signupName: $("signupName"),
+      signupEmail: $("signupEmail"),
+      signupPassword: $("signupPassword"),
+      loginEmail: $("loginEmail"),
+      loginPassword: $("loginPassword"),
 
-    profileForm: $("profileForm"),
-    profileName: $("profileName"),
-    profileAge: $("profileAge"),
-    profileLocation: $("profileLocation"),
-    profileCounty: $("profileCounty"),
-    profileDistance: $("profileDistance"),
-    profilePrivacy: $("profilePrivacy"),
-    profileBio: $("profileBio"),
-    dogName: $("dogName"),
-    dogBreed: $("dogBreed"),
-    dogAge: $("dogAge"),
-    dogSize: $("dogSize"),
-    dogTemperament: $("dogTemperament"),
-    profilePhoto: $("profilePhoto"),
-    dogVerificationPhoto: $("dogVerificationPhoto"),
+      profileForm: $("profileForm"),
+      profileName: $("profileName"),
+      profileAge: $("profileAge"),
+      profileLocation: $("profileLocation"),
+      profileCounty: $("profileCounty"),
+      profileDistance: $("profileDistance"),
+      profilePrivacy: $("profilePrivacy"),
+      profileBio: $("profileBio"),
+      dogName: $("dogName"),
+      dogBreed: $("dogBreed"),
+      dogAge: $("dogAge"),
+      dogSize: $("dogSize"),
+      dogTemperament: $("dogTemperament"),
+      profilePhoto: $("profilePhoto"),
+      dogVerificationPhoto: $("dogVerificationPhoto"),
 
-    previewAvatar: $("previewAvatar"),
-    previewName: $("previewName"),
-    previewMeta: $("previewMeta"),
-    previewBio: $("previewBio"),
-    previewDogName: $("previewDogName"),
-    previewDogMeta: $("previewDogMeta"),
+      previewAvatar: $("previewAvatar"),
+      previewName: $("previewName"),
+      previewMeta: $("previewMeta"),
+      previewBio: $("previewBio"),
+      previewDogName: $("previewDogName"),
+      previewDogMeta: $("previewDogMeta"),
 
-    candidateAvatar: $("candidateAvatar"),
-    candidateName: $("candidateName"),
-    candidateDistance: $("candidateDistance"),
-    candidateMeta: $("candidateMeta"),
-    candidateBio: $("candidateBio"),
-    candidateDogName: $("candidateDogName"),
-    candidateDogBreed: $("candidateDogBreed"),
-    candidateDogTemperament: $("candidateDogTemperament"),
+      candidateAvatar: $("candidateAvatar"),
+      candidateName: $("candidateName"),
+      candidateDistance: $("candidateDistance"),
+      candidateMeta: $("candidateMeta"),
+      candidateBio: $("candidateBio"),
+      candidateDogName: $("candidateDogName"),
+      candidateDogBreed: $("candidateDogBreed"),
+      candidateDogTemperament: $("candidateDogTemperament"),
 
-    passBtn: $("passBtn"),
-    likeBtn: $("likeBtn"),
+      passBtn: $("passBtn"),
+      likeBtn: $("likeBtn"),
 
-    activityOptions: $("activityOptions"),
-    activityMatchSummary: $("activityMatchSummary"),
-    saveActivityChoicesBtn: $("saveActivityChoicesBtn"),
+      activityOptions: $("activityOptions"),
+      activityMatchSummary: $("activityMatchSummary"),
+      saveActivityChoicesBtn: $("saveActivityChoicesBtn"),
 
-    dateOptions: $("dateOptions"),
-    dateSummary: $("dateSummary"),
-    saveDateChoicesBtn: $("saveDateChoicesBtn"),
+      dateOptions: $("dateOptions"),
+      dateSummary: $("dateSummary"),
+      saveDateChoicesBtn: $("saveDateChoicesBtn"),
 
-    matchesList: $("matchesList"),
+      matchesList: $("matchesList"),
 
-    toast: $("toast"),
-    modalOverlay: $("modalOverlay"),
-    modalContent: $("modalContent"),
-    closeModalBtn: $("closeModalBtn"),
+      toast: $("toast"),
+      modalOverlay: $("modalOverlay"),
+      modalContent: $("modalContent"),
+      closeModalBtn: $("closeModalBtn"),
 
-    activityOptionTemplate: $("activityOptionTemplate"),
-    dateOptionTemplate: $("dateOptionTemplate"),
-    matchCardTemplate: $("matchCardTemplate")
-  };
+      activityOptionTemplate: $("activityOptionTemplate"),
+      dateOptionTemplate: $("dateOptionTemplate"),
+      matchCardTemplate: $("matchCardTemplate")
+    };
+  }
 
-  const screens = [
-    dom.screenLanding,
-    dom.screenProfile,
-    dom.screenBrowse,
-    dom.screenActivities,
-    dom.screenDates,
-    dom.screenMatches
-  ];
+  let dom = null;
 
   function safeParse(value, fallback) {
     try {
@@ -158,23 +154,38 @@
     return `id_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
   }
 
+  function screens() {
+    return [
+      dom.screenLanding,
+      dom.screenProfile,
+      dom.screenBrowse,
+      dom.screenActivities,
+      dom.screenDates,
+      dom.screenMatches
+    ].filter(Boolean);
+  }
+
   function showToast(message) {
+    if (!dom.toast) return;
     dom.toast.textContent = message;
     dom.toast.classList.remove("hidden");
 
     clearTimeout(showToast._timer);
     showToast._timer = setTimeout(() => {
-      dom.toast.classList.add("hidden");
+      if (dom.toast) dom.toast.classList.add("hidden");
     }, 3000);
   }
 
   function openModal(html) {
+    if (!dom.modalContent || !dom.modalOverlay) return;
     dom.modalContent.innerHTML = html;
     dom.modalOverlay.classList.remove("hidden");
   }
 
   function closeModal() {
-    dom.modalOverlay.classList.add("hidden");
+    if (dom.modalOverlay) {
+      dom.modalOverlay.classList.add("hidden");
+    }
   }
 
   function setModeBadge() {
@@ -183,18 +194,18 @@
   }
 
   function showScreen(screenId) {
-    screens.forEach((screen) => {
-      if (screen) screen.classList.remove("active");
+    screens().forEach((screen) => {
+      screen.classList.remove("active");
     });
 
     const screen = document.getElementById(screenId);
     if (screen) {
       screen.classList.add("active");
-      window.scrollTo({ top: 0, behavior: "smooth" });
     }
   }
 
   function setSignedInUI(isSignedIn) {
+    if (!dom.navBrowseBtn || !dom.navProfileBtn || !dom.navMatchesBtn || !dom.logoutBtn) return;
     dom.navBrowseBtn.classList.toggle("hidden", !isSignedIn);
     dom.navProfileBtn.classList.toggle("hidden", !isSignedIn);
     dom.navMatchesBtn.classList.toggle("hidden", !isSignedIn);
@@ -215,6 +226,8 @@
   }
 
   function updateProfilePreview() {
+    if (!dom.previewName) return;
+
     const name = dom.profileName.value.trim() || "Your name";
     const age = dom.profileAge.value.trim() || "Age";
     const location = dom.profileLocation.value.trim() || "Area";
@@ -273,7 +286,6 @@
 
   function mapFirebaseUser(user) {
     if (!user) return null;
-
     return {
       uid: user.uid,
       name: user.displayName || "",
@@ -295,7 +307,6 @@
 
       const mapped = mapFirebaseUser(credential.user);
       mapped.name = name || mapped.name;
-
       state.user = mapped;
       setLocalSession(mapped);
       return mapped;
@@ -332,7 +343,6 @@
     if (FIREBASE.enabled && FIREBASE.auth) {
       const credential = await FIREBASE.auth.signInWithEmailAndPassword(email, password);
       const mapped = mapFirebaseUser(credential.user);
-
       state.user = mapped;
       setLocalSession(mapped);
       return mapped;
@@ -405,7 +415,6 @@
     if (FIREBASE.enabled && FIREBASE.db) {
       try {
         const doc = await FIREBASE.db.collection("profiles").doc(uid).get();
-
         if (doc.exists) {
           const profile = doc.data();
           saveLocalProfile(uid, profile);
@@ -547,6 +556,8 @@
   }
 
   function buildActivityOptions() {
+    if (!dom.activityOptions || !dom.activityOptionTemplate) return;
+
     dom.activityOptions.innerHTML = "";
 
     APP_DATA.activities.forEach((activity) => {
@@ -560,6 +571,8 @@
   }
 
   function buildDateOptions() {
+    if (!dom.dateOptions || !dom.dateOptionTemplate) return;
+
     dom.dateOptions.innerHTML = "";
 
     APP_DATA.dateOptions.forEach((item) => {
@@ -619,6 +632,8 @@
   }
 
   function renderMatches() {
+    if (!dom.matchesList) return;
+
     dom.matchesList.innerHTML = "";
 
     if (!state.matches.length) {
@@ -866,7 +881,6 @@
       state.profile = await loadProfile(state.user.uid);
       await loadMatches(state.user.uid);
       renderMatches();
-
       dom.signupForm.reset();
       showToast("Account created.");
       showScreen("screenProfile");
@@ -889,11 +903,9 @@
     try {
       await loginUser(email, password);
       setSignedInUI(true);
-
       state.profile = await loadProfile(state.user.uid);
       await loadMatches(state.user.uid);
       renderMatches();
-
       dom.loginForm.reset();
       showToast("Logged in.");
 
@@ -976,6 +988,7 @@
       dom.dogSize,
       dom.dogTemperament
     ].forEach((input) => {
+      if (!input) return;
       input.addEventListener("input", updateProfilePreview);
     });
   }
@@ -1030,6 +1043,7 @@
     dom.logoutBtn.addEventListener("click", logoutUser);
 
     dom.closeModalBtn.addEventListener("click", closeModal);
+
     dom.modalOverlay.addEventListener("click", (event) => {
       if (event.target === dom.modalOverlay) {
         closeModal();
@@ -1048,7 +1062,6 @@
 
     state.user = cachedUser;
     setSignedInUI(true);
-
     state.profile = await loadProfile(cachedUser.uid);
     await loadMatches(cachedUser.uid);
     renderMatches();
@@ -1064,54 +1077,38 @@
 
   async function restoreFirebaseSession() {
     return new Promise((resolve) => {
-      let unsub = null;
-
-      const finish = async (user) => {
-        if (typeof unsub === "function") unsub();
-
-        if (!user) {
-          state.user = null;
-          state.profile = null;
-          state.matches = [];
-          setSignedInUI(false);
-          showScreen("screenLanding");
-          resolve();
-          return;
-        }
-
-        state.user = mapFirebaseUser(user);
-        setLocalSession(state.user);
-        setSignedInUI(true);
-
-        state.profile = await loadProfile(state.user.uid);
-        await loadMatches(state.user.uid);
-        renderMatches();
-
-        if (state.profile) {
-          fillProfileForm(state.profile);
-          renderCandidate();
-          showScreen("screenBrowse");
-        } else {
-          showScreen("screenProfile");
-        }
-
-        resolve();
-      };
-
       try {
-        unsub = FIREBASE.auth.onAuthStateChanged(
-          async (user) => {
-            await finish(user);
-          },
-          async (error) => {
-            console.warn("Auth restore failed. Falling back to landing screen.", error);
+        FIREBASE.auth.onAuthStateChanged(async (user) => {
+          if (!user) {
+            state.user = null;
+            state.profile = null;
+            state.matches = [];
             setSignedInUI(false);
             showScreen("screenLanding");
             resolve();
+            return;
           }
-        );
+
+          state.user = mapFirebaseUser(user);
+          setLocalSession(state.user);
+          setSignedInUI(true);
+
+          state.profile = await loadProfile(state.user.uid);
+          await loadMatches(state.user.uid);
+          renderMatches();
+
+          if (state.profile) {
+            fillProfileForm(state.profile);
+            renderCandidate();
+            showScreen("screenBrowse");
+          } else {
+            showScreen("screenProfile");
+          }
+
+          resolve();
+        });
       } catch (error) {
-        console.warn("Firebase auth listener failed. Falling back to demo restore.", error);
+        console.warn("Firebase auth restore failed. Falling back to demo restore.", error);
         restoreDemoSession().then(resolve);
       }
     });
@@ -1127,15 +1124,34 @@
   }
 
   function init() {
+    if (state.booted) return;
+    state.booted = true;
+
+    dom = getDom();
+
+    if (!dom.modeBadge || !dom.showSignupBtn || !dom.signupForm || !dom.profileForm) {
+      console.error("App boot failed: DOM elements missing.");
+      return;
+    }
+
     setModeBadge();
     buildActivityOptions();
     buildDateOptions();
     bindEvents();
     updateProfilePreview();
-    restoreSession();
 
-    console.log(FIREBASE.enabled ? "Running in Firebase mode." : "Running in local demo mode.");
+    restoreSession().catch((error) => {
+      console.warn("Session restore failed.", error);
+      setSignedInUI(false);
+      showScreen("screenLanding");
+    });
+
+    console.log(FIREBASE.enabled ? "Running in Firebase mode." : "Running in demo mode.");
   }
 
-  document.addEventListener("DOMContentLoaded", init);
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", init);
+  } else {
+    init();
+  }
 })();
