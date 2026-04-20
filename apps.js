@@ -1,8 +1,19 @@
 (function () {
   "use strict";
 
-  const APP_DATA = window.APP_DATA || { activities: [], dateOptions: [], demoCandidates: [] };
-  const FIREBASE = window.firebaseServices || { enabled: false, mode: "demo", auth: null, db: null };
+  const APP_DATA = window.APP_DATA || {
+    activities: [],
+    dateOptions: [],
+    demoCandidates: []
+  };
+
+  const FIREBASE = window.firebaseServices || {
+    enabled: false,
+    mode: "demo",
+    app: null,
+    auth: null,
+    db: null
+  };
 
   const STORAGE_KEYS = {
     users: "paws_users",
@@ -23,6 +34,8 @@
   const $ = (id) => document.getElementById(id);
 
   const dom = {
+    modeBadge: $("modeBadge"),
+
     screenLanding: $("screenLanding"),
     screenProfile: $("screenProfile"),
     screenBrowse: $("screenBrowse"),
@@ -129,6 +142,10 @@
     localStorage.setItem(key, JSON.stringify(value));
   }
 
+  function removeStorage(key) {
+    localStorage.removeItem(key);
+  }
+
   function profileKey(uid) {
     return `${STORAGE_KEYS.profilePrefix}${uid}`;
   }
@@ -144,6 +161,7 @@
   function showToast(message) {
     dom.toast.textContent = message;
     dom.toast.classList.remove("hidden");
+
     clearTimeout(showToast._timer);
     showToast._timer = setTimeout(() => {
       dom.toast.classList.add("hidden");
@@ -159,9 +177,14 @@
     dom.modalOverlay.classList.add("hidden");
   }
 
+  function setModeBadge() {
+    if (!dom.modeBadge) return;
+    dom.modeBadge.textContent = FIREBASE.enabled ? "Firebase mode" : "Demo mode";
+  }
+
   function showScreen(screenId) {
     screens.forEach((screen) => {
-      screen.classList.remove("active");
+      if (screen) screen.classList.remove("active");
     });
 
     const screen = document.getElementById(screenId);
@@ -178,13 +201,15 @@
     dom.logoutBtn.classList.toggle("hidden", !isSignedIn);
   }
 
-  function getSelectedProfileActivities() {
-    return Array.from(document.querySelectorAll('input[name="activities"]:checked')).map((input) => input.value);
+  function getSelectedValues(selector) {
+    return Array.from(document.querySelectorAll(selector))
+      .filter((input) => input.checked)
+      .map((input) => input.value);
   }
 
-  function setSelectedProfileActivities(activityIds) {
-    const selected = new Set(activityIds || []);
-    document.querySelectorAll('input[name="activities"]').forEach((input) => {
+  function setSelectedValues(selector, values) {
+    const selected = new Set(values || []);
+    document.querySelectorAll(selector).forEach((input) => {
       input.checked = selected.has(input.value);
     });
   }
@@ -214,53 +239,72 @@
     saveJSON(STORAGE_KEYS.users, users);
   }
 
-  function setLocalSession(user) {
-    saveJSON(STORAGE_KEYS.session, user);
-  }
-
   function getLocalSession() {
     return loadJSON(STORAGE_KEYS.session, null);
   }
 
-  function clearLocalSession() {
-    localStorage.removeItem(STORAGE_KEYS.session);
+  function setLocalSession(user) {
+    saveJSON(STORAGE_KEYS.session, user);
   }
 
-  function saveLocalProfile(uid, profile) {
-    saveJSON(profileKey(uid), profile);
+  function clearLocalSession() {
+    removeStorage(STORAGE_KEYS.session);
   }
 
   function getLocalProfile(uid) {
     return loadJSON(profileKey(uid), null);
   }
 
-  function saveLocalMatches(uid, matches) {
-    saveJSON(matchesKey(uid), matches);
+  function saveLocalProfile(uid, profile) {
+    saveJSON(profileKey(uid), profile);
   }
 
   function getLocalMatches(uid) {
     return loadJSON(matchesKey(uid), []);
   }
 
+  function saveLocalMatches(uid, matches) {
+    saveJSON(matchesKey(uid), matches);
+  }
+
+  function sortMatches(matches) {
+    return [...matches].sort((a, b) => (b.updatedAtMs || 0) - (a.updatedAtMs || 0));
+  }
+
+  function mapFirebaseUser(user) {
+    if (!user) return null;
+
+    return {
+      uid: user.uid,
+      name: user.displayName || "",
+      email: user.email || ""
+    };
+  }
+
   async function createAccount(name, email, password) {
     if (FIREBASE.enabled && FIREBASE.auth) {
       const credential = await FIREBASE.auth.createUserWithEmailAndPassword(email, password);
-      const user = credential.user;
 
-      state.user = {
-        uid: user.uid,
-        name: name,
-        email: user.email
-      };
+      if (credential.user && name) {
+        try {
+          await credential.user.updateProfile({ displayName: name });
+        } catch (error) {
+          console.warn("Could not set display name.", error);
+        }
+      }
 
-      setLocalSession(state.user);
-      return state.user;
+      const mapped = mapFirebaseUser(credential.user);
+      mapped.name = name || mapped.name;
+
+      state.user = mapped;
+      setLocalSession(mapped);
+      return mapped;
     }
 
     const users = getLocalUsers();
-    const exists = users.find((user) => user.email.toLowerCase() === email.toLowerCase());
+    const existing = users.find((user) => user.email.toLowerCase() === email.toLowerCase());
 
-    if (exists) {
+    if (existing) {
       throw new Error("An account with that email already exists.");
     }
 
@@ -284,19 +328,14 @@
     return state.user;
   }
 
-  async function login(email, password) {
+  async function loginUser(email, password) {
     if (FIREBASE.enabled && FIREBASE.auth) {
       const credential = await FIREBASE.auth.signInWithEmailAndPassword(email, password);
-      const user = credential.user;
+      const mapped = mapFirebaseUser(credential.user);
 
-      state.user = {
-        uid: user.uid,
-        name: user.displayName || "",
-        email: user.email
-      };
-
-      setLocalSession(state.user);
-      return state.user;
+      state.user = mapped;
+      setLocalSession(mapped);
+      return mapped;
     }
 
     const users = getLocalUsers();
@@ -318,7 +357,7 @@
     return state.user;
   }
 
-  async function logout() {
+  async function logoutUser() {
     if (FIREBASE.enabled && FIREBASE.auth) {
       try {
         await FIREBASE.auth.signOut();
@@ -329,8 +368,8 @@
 
     state.user = null;
     state.profile = null;
-    state.matches = [];
     state.currentMatch = null;
+    state.matches = [];
     clearLocalSession();
     setSignedInUI(false);
     showScreen("screenLanding");
@@ -342,16 +381,22 @@
       throw new Error("No active user.");
     }
 
+    const cleanProfile = {
+      ...profile,
+      updatedAtMs: Date.now()
+    };
+
     if (FIREBASE.enabled && FIREBASE.db) {
       try {
-        await FIREBASE.db.collection("profiles").doc(state.user.uid).set(profile, { merge: true });
+        await FIREBASE.db.collection("profiles").doc(state.user.uid).set(cleanProfile, { merge: true });
       } catch (error) {
-        console.warn("Firestore profile save failed, continuing with local cache.", error);
+        console.warn("Firestore profile save failed. Using local cache.", error);
       }
     }
 
-    saveLocalProfile(state.user.uid, profile);
-    state.profile = profile;
+    saveLocalProfile(state.user.uid, cleanProfile);
+    state.profile = cleanProfile;
+    return cleanProfile;
   }
 
   async function loadProfile(uid) {
@@ -360,28 +405,74 @@
     if (FIREBASE.enabled && FIREBASE.db) {
       try {
         const doc = await FIREBASE.db.collection("profiles").doc(uid).get();
+
         if (doc.exists) {
           const profile = doc.data();
           saveLocalProfile(uid, profile);
           return profile;
         }
       } catch (error) {
-        console.warn("Firestore profile load failed, using local cache.", error);
+        console.warn("Firestore profile load failed. Using local cache.", error);
       }
     }
 
     return getLocalProfile(uid);
   }
 
-  function loadMatches() {
-    if (!state.user) return [];
-    state.matches = getLocalMatches(state.user.uid);
-    return state.matches;
+  async function saveMatch(match) {
+    if (!state.user) return;
+
+    match.updatedAtMs = Date.now();
+
+    const existingIndex = state.matches.findIndex((item) => item.id === match.id);
+
+    if (existingIndex >= 0) {
+      state.matches[existingIndex] = { ...match };
+    } else {
+      state.matches.unshift({ ...match });
+    }
+
+    state.matches = sortMatches(state.matches);
+    saveLocalMatches(state.user.uid, state.matches);
+
+    if (FIREBASE.enabled && FIREBASE.db) {
+      try {
+        await FIREBASE.db
+          .collection("users")
+          .doc(state.user.uid)
+          .collection("matches")
+          .doc(match.id)
+          .set(match, { merge: true });
+      } catch (error) {
+        console.warn("Firestore match save failed. Using local cache.", error);
+      }
+    }
   }
 
-  function persistMatches() {
-    if (!state.user) return;
-    saveLocalMatches(state.user.uid, state.matches);
+  async function loadMatches(uid) {
+    if (!uid) return [];
+
+    if (FIREBASE.enabled && FIREBASE.db) {
+      try {
+        const snapshot = await FIREBASE.db
+          .collection("users")
+          .doc(uid)
+          .collection("matches")
+          .get();
+
+        const matches = snapshot.docs.map((doc) => doc.data());
+        const sorted = sortMatches(matches);
+        saveLocalMatches(uid, sorted);
+        state.matches = sorted;
+        return sorted;
+      } catch (error) {
+        console.warn("Firestore match load failed. Using local cache.", error);
+      }
+    }
+
+    const localMatches = sortMatches(getLocalMatches(uid));
+    state.matches = localMatches;
+    return localMatches;
   }
 
   function fillProfileForm(profile) {
@@ -400,7 +491,7 @@
     dom.dogSize.value = profile.dog?.size || "";
     dom.dogTemperament.value = profile.dog?.temperament || "";
 
-    setSelectedProfileActivities(profile.activities || []);
+    setSelectedValues('input[name="activities"]', profile.activities || []);
     updateProfilePreview();
   }
 
@@ -447,12 +538,12 @@
     renderCandidate();
   }
 
-  function getActivityById(activityId) {
-    return APP_DATA.activities.find((activity) => activity.id === activityId) || null;
+  function getActivityById(id) {
+    return APP_DATA.activities.find((activity) => activity.id === id) || null;
   }
 
-  function getDateById(dateId) {
-    return APP_DATA.dateOptions.find((item) => item.id === dateId) || null;
+  function getDateById(id) {
+    return APP_DATA.dateOptions.find((item) => item.id === id) || null;
   }
 
   function buildActivityOptions() {
@@ -460,16 +551,10 @@
 
     APP_DATA.activities.forEach((activity) => {
       const node = dom.activityOptionTemplate.content.firstElementChild.cloneNode(true);
-      const checkbox = node.querySelector(".activity-checkbox");
-      const title = node.querySelector(".activity-title");
-      const desc = node.querySelector(".activity-description");
-      const distance = node.querySelector(".activity-distance");
-
-      checkbox.value = activity.id;
-      title.textContent = activity.title;
-      desc.textContent = activity.description;
-      distance.textContent = activity.distanceLabel;
-
+      node.querySelector(".activity-checkbox").value = activity.id;
+      node.querySelector(".activity-title").textContent = activity.title;
+      node.querySelector(".activity-description").textContent = activity.description;
+      node.querySelector(".activity-distance").textContent = activity.distanceLabel;
       dom.activityOptions.appendChild(node);
     });
   }
@@ -479,47 +564,58 @@
 
     APP_DATA.dateOptions.forEach((item) => {
       const node = dom.dateOptionTemplate.content.firstElementChild.cloneNode(true);
-      const checkbox = node.querySelector(".date-checkbox");
-      const title = node.querySelector(".date-title");
-      const desc = node.querySelector(".date-description");
-
-      checkbox.value = item.id;
-      title.textContent = item.title;
-      desc.textContent = item.description;
-
+      node.querySelector(".date-checkbox").value = item.id;
+      node.querySelector(".date-title").textContent = item.title;
+      node.querySelector(".date-description").textContent = item.description;
       dom.dateOptions.appendChild(node);
     });
   }
 
-  function populateActivitySummary(match) {
-    if (!match) {
-      dom.activityMatchSummary.innerHTML = "No active match.";
-      return;
-    }
+  function renderActivityScreen(match) {
+    state.currentMatch = match;
+    setSelectedValues(".activity-checkbox", match.activityChoices || []);
 
     dom.activityMatchSummary.innerHTML = `
       <strong>${match.personName}</strong><br>
       Dog: ${match.personDogName}<br><br>
       Choose the kinds of dog date you would enjoy.<br>
-      The app will compare your selections with theirs.
+      The app compares your picks with theirs.
     `;
+
+    showScreen("screenActivities");
   }
 
-  function populateDateSummary(match) {
-    if (!match) {
-      dom.dateSummary.innerHTML = "No active match.";
-      return;
-    }
+  function renderDateScreen(match) {
+    state.currentMatch = match;
+    setSelectedValues(".date-checkbox", match.dateChoices || []);
 
-    const activityNames = (match.activityOverlap || [])
+    const sharedActivityNames = (match.activityOverlap || [])
       .map((id) => getActivityById(id)?.title)
-      .filter(Boolean);
+      .filter(Boolean)
+      .join(", ") || "None yet";
 
     dom.dateSummary.innerHTML = `
       <strong>${match.personName}</strong><br>
-      Shared activity fit: ${activityNames.length ? activityNames.join(", ") : "None yet"}<br><br>
+      Shared activity fit: ${sharedActivityNames}<br><br>
       Now choose dates that work for you.
     `;
+
+    showScreen("screenDates");
+  }
+
+  function getMatchActionLabel(match) {
+    switch (match.stage) {
+      case "activities":
+      case "activity_retry":
+        return "Continue";
+      case "dates":
+      case "date_retry":
+        return "Pick date";
+      case "ready":
+        return "View";
+      default:
+        return "Open";
+    }
   }
 
   function renderMatches() {
@@ -543,14 +639,34 @@
       node.querySelector(".match-meta").textContent = `${match.personDogName} • ${match.personArea}`;
       node.querySelector(".match-status").textContent = match.statusText || "Matched";
 
-      node.querySelector(".match-open-btn").addEventListener("click", () => {
+      const button = node.querySelector(".match-open-btn");
+      button.textContent = getMatchActionLabel(match);
+
+      button.addEventListener("click", () => {
+        state.currentMatch = match;
+
+        if (match.stage === "activities" || match.stage === "activity_retry") {
+          renderActivityScreen(match);
+          return;
+        }
+
+        if (match.stage === "dates" || match.stage === "date_retry") {
+          renderDateScreen(match);
+          return;
+        }
+
         const activityNames = (match.activityOverlap || [])
           .map((id) => getActivityById(id)?.title)
           .filter(Boolean)
           .join(", ") || "No shared activity selected yet";
 
-        const dateName = match.finalDate ? (getDateById(match.finalDate)?.title || match.finalDate) : "No final date yet";
-        const suggestedActivity = match.suggestedActivity ? (getActivityById(match.suggestedActivity)?.title || match.suggestedActivity) : "Not chosen yet";
+        const dateName = match.finalDate
+          ? (getDateById(match.finalDate)?.title || match.finalDate)
+          : "No final date yet";
+
+        const suggestedActivity = match.suggestedActivity
+          ? (getActivityById(match.suggestedActivity)?.title || match.suggestedActivity)
+          : "Not chosen yet";
 
         openModal(`
           <h3>${match.personName}</h3>
@@ -567,7 +683,7 @@
   }
 
   function createMatchFromCandidate(candidate) {
-    const newMatch = {
+    return {
       id: uuid(),
       personId: candidate.id,
       personName: candidate.name,
@@ -582,38 +698,14 @@
       dateOverlap: [],
       suggestedActivity: null,
       finalDate: null,
+      stage: "activities",
       statusText: "Matched on profile. Activity step pending.",
-      createdAt: new Date().toISOString()
+      createdAtMs: Date.now(),
+      updatedAtMs: Date.now()
     };
-
-    state.matches.unshift(newMatch);
-    state.currentMatch = newMatch;
-    persistMatches();
-    renderMatches();
-    return newMatch;
   }
 
-  function getCurrentActivitySelections() {
-    return Array.from(document.querySelectorAll(".activity-checkbox:checked")).map((input) => input.value);
-  }
-
-  function getCurrentDateSelections() {
-    return Array.from(document.querySelectorAll(".date-checkbox:checked")).map((input) => input.value);
-  }
-
-  function clearActivitySelections() {
-    document.querySelectorAll(".activity-checkbox").forEach((input) => {
-      input.checked = false;
-    });
-  }
-
-  function clearDateSelections() {
-    document.querySelectorAll(".date-checkbox").forEach((input) => {
-      input.checked = false;
-    });
-  }
-
-  function handleLike() {
+  async function handleLike() {
     if (!state.profile) {
       showToast("Save your profile first.");
       showScreen("screenProfile");
@@ -633,8 +725,10 @@
     }
 
     const match = createMatchFromCandidate(candidate);
-    clearActivitySelections();
-    populateActivitySummary(match);
+    state.currentMatch = match;
+    await saveMatch(match);
+    renderMatches();
+    renderActivityScreen(match);
 
     openModal(`
       <h3>It’s a match with ${candidate.name}</h3>
@@ -642,7 +736,6 @@
       <p>Next step: compare dog-date activities instead of forcing a first chat.</p>
     `);
 
-    showScreen("screenActivities");
     nextCandidate();
   }
 
@@ -656,13 +749,13 @@
     nextCandidate();
   }
 
-  function saveActivityChoices() {
+  async function saveActivityChoices() {
     if (!state.currentMatch) {
       showToast("No active match selected.");
       return;
     }
 
-    const selections = getCurrentActivitySelections();
+    const selections = getSelectedValues(".activity-checkbox");
 
     if (!selections.length) {
       showToast("Choose at least one activity.");
@@ -670,48 +763,45 @@
     }
 
     const overlap = selections.filter((id) => state.currentMatch.theirActivityLikes.includes(id));
-
     state.currentMatch.activityChoices = selections;
     state.currentMatch.activityOverlap = overlap;
     state.currentMatch.suggestedActivity = overlap[0] || null;
 
     if (overlap.length) {
       const names = overlap.map((id) => getActivityById(id)?.title).filter(Boolean);
+      state.currentMatch.stage = "dates";
       state.currentMatch.statusText = `Shared activity found: ${names.join(", ")}`;
-      persistMatches();
+      await saveMatch(state.currentMatch);
       renderMatches();
-      populateDateSummary(state.currentMatch);
-      clearDateSelections();
+      renderDateScreen(state.currentMatch);
 
       openModal(`
         <h3>Shared dog-date fit found</h3>
         <p>You both liked: <strong>${names.join(", ")}</strong></p>
         <p>Next step: compare your availability.</p>
       `);
-
-      showScreen("screenDates");
     } else {
+      state.currentMatch.stage = "activity_retry";
       state.currentMatch.statusText = "Matched on profile, but no shared activity yet.";
-      persistMatches();
+      await saveMatch(state.currentMatch);
       renderMatches();
+      showScreen("screenMatches");
 
       openModal(`
         <h3>No shared activity yet</h3>
         <p>You matched on attraction, but not on the activity step.</p>
-        <p>That’s still useful. It shows where the friction is.</p>
+        <p>You can reopen this match later and try different activity choices.</p>
       `);
-
-      showScreen("screenMatches");
     }
   }
 
-  function saveDateChoices() {
+  async function saveDateChoices() {
     if (!state.currentMatch) {
       showToast("No active match selected.");
       return;
     }
 
-    const selections = getCurrentDateSelections();
+    const selections = getSelectedValues(".date-checkbox");
 
     if (!selections.length) {
       showToast("Choose at least one date option.");
@@ -719,7 +809,6 @@
     }
 
     const overlap = selections.filter((id) => state.currentMatch.theirDateLikes.includes(id));
-
     state.currentMatch.dateChoices = selections;
     state.currentMatch.dateOverlap = overlap;
 
@@ -729,9 +818,12 @@
       const activityLabel = getActivityById(state.currentMatch.suggestedActivity)?.title || "Dog date activity";
 
       state.currentMatch.finalDate = finalDate;
+      state.currentMatch.stage = "ready";
       state.currentMatch.statusText = `Ready to propose: ${activityLabel} on ${finalDateLabel}`;
-      persistMatches();
+
+      await saveMatch(state.currentMatch);
       renderMatches();
+      showScreen("screenMatches");
 
       openModal(`
         <h3>Date plan ready</h3>
@@ -740,20 +832,19 @@
         <p>${finalDateLabel}</p>
         <p>This is the point where a real app could unlock chat, booking links, or confirmation buttons.</p>
       `);
-
-      showScreen("screenMatches");
     } else {
+      state.currentMatch.stage = "date_retry";
       state.currentMatch.statusText = "Matched on activity, but no shared date yet.";
-      persistMatches();
+
+      await saveMatch(state.currentMatch);
       renderMatches();
+      showScreen("screenMatches");
 
       openModal(`
         <h3>No shared date yet</h3>
         <p>You matched on the activity step, but not on availability.</p>
-        <p>A real version would now offer chat or broader date windows.</p>
+        <p>You can reopen this match later and try different date choices.</p>
       `);
-
-      showScreen("screenMatches");
     }
   }
 
@@ -772,11 +863,13 @@
     try {
       await createAccount(name, email, password);
       setSignedInUI(true);
+      state.profile = await loadProfile(state.user.uid);
+      await loadMatches(state.user.uid);
+      renderMatches();
+
+      dom.signupForm.reset();
       showToast("Account created.");
       showScreen("screenProfile");
-      dom.signupForm.reset();
-      loadMatches();
-      renderMatches();
     } catch (error) {
       showToast(error.message || "Could not create account.");
     }
@@ -794,11 +887,15 @@
     }
 
     try {
-      await login(email, password);
+      await loginUser(email, password);
       setSignedInUI(true);
+
       state.profile = await loadProfile(state.user.uid);
-      loadMatches();
+      await loadMatches(state.user.uid);
       renderMatches();
+
+      dom.loginForm.reset();
+      showToast("Logged in.");
 
       if (state.profile) {
         fillProfileForm(state.profile);
@@ -807,9 +904,6 @@
       } else {
         showScreen("screenProfile");
       }
-
-      dom.loginForm.reset();
-      showToast("Logged in.");
     } catch (error) {
       showToast(error.message || "Login failed.");
     }
@@ -834,7 +928,7 @@
       distancePreference: dom.profileDistance.value,
       privacy: dom.profilePrivacy.value,
       bio: dom.profileBio.value.trim(),
-      activities: getSelectedProfileActivities(),
+      activities: getSelectedValues('input[name="activities"]'),
       photos: {
         profileFilename: dom.profilePhoto.files?.[0]?.name || null,
         dogVerificationFilename: dom.dogVerificationPhoto.files?.[0]?.name || null
@@ -845,11 +939,17 @@
         age: dom.dogAge.value.trim(),
         size: dom.dogSize.value,
         temperament: dom.dogTemperament.value.trim()
-      },
-      updatedAt: new Date().toISOString()
+      }
     };
 
-    if (!profile.name || !profile.age || !profile.location || !profile.bio || !profile.dog.name || !profile.dog.breed) {
+    if (
+      !profile.name ||
+      !profile.age ||
+      !profile.location ||
+      !profile.bio ||
+      !profile.dog.name ||
+      !profile.dog.breed
+    ) {
       showToast("Fill in the key profile and dog details first.");
       return;
     }
@@ -863,6 +963,21 @@
     } catch (error) {
       showToast(error.message || "Could not save profile.");
     }
+  }
+
+  function bindPreviewInputs() {
+    [
+      dom.profileName,
+      dom.profileAge,
+      dom.profileLocation,
+      dom.profileBio,
+      dom.dogName,
+      dom.dogBreed,
+      dom.dogSize,
+      dom.dogTemperament
+    ].forEach((input) => {
+      input.addEventListener("input", updateProfilePreview);
+    });
   }
 
   function bindEvents() {
@@ -880,18 +995,7 @@
     dom.loginForm.addEventListener("submit", handleLoginSubmit);
     dom.profileForm.addEventListener("submit", handleProfileSubmit);
 
-    [
-      dom.profileName,
-      dom.profileAge,
-      dom.profileLocation,
-      dom.profileBio,
-      dom.dogName,
-      dom.dogBreed,
-      dom.dogSize,
-      dom.dogTemperament
-    ].forEach((input) => {
-      input.addEventListener("input", updateProfilePreview);
-    });
+    bindPreviewInputs();
 
     dom.passBtn.addEventListener("click", handlePass);
     dom.likeBtn.addEventListener("click", handleLike);
@@ -900,6 +1004,7 @@
 
     dom.navHomeBtn.addEventListener("click", () => {
       if (state.user && state.profile) {
+        renderCandidate();
         showScreen("screenBrowse");
       } else if (state.user) {
         showScreen("screenProfile");
@@ -922,7 +1027,8 @@
       showScreen("screenMatches");
     });
 
-    dom.logoutBtn.addEventListener("click", logout);
+    dom.logoutBtn.addEventListener("click", logoutUser);
+
     dom.closeModalBtn.addEventListener("click", closeModal);
     dom.modalOverlay.addEventListener("click", (event) => {
       if (event.target === dom.modalOverlay) {
@@ -931,7 +1037,7 @@
     });
   }
 
-  async function restoreSession() {
+  async function restoreDemoSession() {
     const cachedUser = getLocalSession();
 
     if (!cachedUser) {
@@ -944,7 +1050,7 @@
     setSignedInUI(true);
 
     state.profile = await loadProfile(cachedUser.uid);
-    loadMatches();
+    await loadMatches(cachedUser.uid);
     renderMatches();
 
     if (state.profile) {
@@ -956,18 +1062,79 @@
     }
   }
 
+  async function restoreFirebaseSession() {
+    return new Promise((resolve) => {
+      let unsub = null;
+
+      const finish = async (user) => {
+        if (typeof unsub === "function") unsub();
+
+        if (!user) {
+          state.user = null;
+          state.profile = null;
+          state.matches = [];
+          setSignedInUI(false);
+          showScreen("screenLanding");
+          resolve();
+          return;
+        }
+
+        state.user = mapFirebaseUser(user);
+        setLocalSession(state.user);
+        setSignedInUI(true);
+
+        state.profile = await loadProfile(state.user.uid);
+        await loadMatches(state.user.uid);
+        renderMatches();
+
+        if (state.profile) {
+          fillProfileForm(state.profile);
+          renderCandidate();
+          showScreen("screenBrowse");
+        } else {
+          showScreen("screenProfile");
+        }
+
+        resolve();
+      };
+
+      try {
+        unsub = FIREBASE.auth.onAuthStateChanged(
+          async (user) => {
+            await finish(user);
+          },
+          async (error) => {
+            console.warn("Auth restore failed. Falling back to landing screen.", error);
+            setSignedInUI(false);
+            showScreen("screenLanding");
+            resolve();
+          }
+        );
+      } catch (error) {
+        console.warn("Firebase auth listener failed. Falling back to demo restore.", error);
+        restoreDemoSession().then(resolve);
+      }
+    });
+  }
+
+  async function restoreSession() {
+    if (FIREBASE.enabled && FIREBASE.auth) {
+      await restoreFirebaseSession();
+      return;
+    }
+
+    await restoreDemoSession();
+  }
+
   function init() {
+    setModeBadge();
     buildActivityOptions();
     buildDateOptions();
     bindEvents();
     updateProfilePreview();
     restoreSession();
 
-    if (FIREBASE.enabled) {
-      console.log("Running in Firebase-enabled mode.");
-    } else {
-      console.log("Running in local demo mode.");
-    }
+    console.log(FIREBASE.enabled ? "Running in Firebase mode." : "Running in local demo mode.");
   }
 
   document.addEventListener("DOMContentLoaded", init);
